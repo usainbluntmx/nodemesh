@@ -91,6 +91,7 @@ export default function Home() {
       </header>
 
       {/* Tabs */}
+      {/* Tabs — solo visible en mobile */}
       <nav style={{
         display: "flex",
         gap: "4px",
@@ -99,32 +100,37 @@ export default function Home() {
         overflowX: "auto",
         WebkitOverflowScrolling: "touch" as any,
       }}>
-        {([
-          { id: "map", label: "🌐 Network" },
-          { id: "user", label: "👤 Use" },
-          { id: "provider", label: "⚡ Earn" },
-        ] as { id: Tab; label: string }[]).map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "6px",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "clamp(11px, 2vw, 12px)",
-              fontFamily: "inherit",
-              fontWeight: "600",
-              whiteSpace: "nowrap",
-              transition: "all 0.2s",
-              background: activeTab === tab.id ? "rgba(16,185,129,0.15)" : "transparent",
-              color: activeTab === tab.id ? "#6ee7b7" : "#475569",
-              outline: activeTab === tab.id ? "1px solid rgba(16,185,129,0.3)" : "none",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <style>{`
+    @media (min-width: 1024px) { #mobile-nav { display: none !important; } }
+  `}</style>
+        <div id="mobile-nav" style={{ display: "flex", gap: "4px", width: "100%" }}>
+          {([
+            { id: "map", label: "🌐 Network" },
+            { id: "user", label: "👤 Use" },
+            { id: "provider", label: "⚡ Earn" },
+          ] as { id: Tab; label: string }[]).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "6px",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "clamp(11px, 2vw, 12px)",
+                fontFamily: "inherit",
+                fontWeight: "600",
+                whiteSpace: "nowrap",
+                transition: "all 0.2s",
+                background: activeTab === tab.id ? "rgba(16,185,129,0.15)" : "transparent",
+                color: activeTab === tab.id ? "#6ee7b7" : "#475569",
+                outline: activeTab === tab.id ? "1px solid rgba(16,185,129,0.3)" : "none",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </nav>
 
       {/* Dashboard */}

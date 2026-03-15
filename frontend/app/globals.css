@@ -172,3 +172,53 @@ select {
     font-size: 13px !important;
   }
 }
+
+/* Textos globales más claros */
+body {
+  color: #e2e8f0;
+}
+
+p,
+span,
+div {
+  color: inherit;
+}
+
+/* Jerarquía de colores de texto */
+.text-primary {
+  color: #f8fafc;
+}
+
+.text-secondary {
+  color: #cbd5e1;
+}
+
+.text-muted {
+  color: #64748b;
+}
+
+/* Overrides directos para los colores más usados en la dApp */
+[style*="color: \"#475569\""],
+[style*="color:#475569"] {
+  color: #94a3b8 !important;
+}
+
+[style*="color: \"#64748b\""],
+[style*="color:#64748b"] {
+  color: #94a3b8 !important;
+}
+
+[style*="color: \"#334155\""],
+[style*="color:#334155"] {
+  color: #64748b !important;
+}
+
+[style*="color: \"#1e293b\""],
+[style*="color:#1e293b"] {
+  color: #475569 !important;
+}
+
+/* SVG text en el mapa */
+svg text {
+  fill: #94a3b8 !important;
+}

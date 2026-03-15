@@ -101,8 +101,8 @@ export function NodeMap() {
                         style={{
                             width: "100%",
                             display: "block",
-                            opacity: 0.15,
-                            filter: "invert(1) sepia(1) saturate(2) hue-rotate(180deg)",
+                            opacity: 0.45,
+                            filter: "brightness(3) saturate(0.3) invert(0)",
                         }}
                     />
 

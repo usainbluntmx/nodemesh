@@ -36,10 +36,66 @@ function getCoords(location: string) {
     return key ? LOCATION_COORDS[key] : null;
 }
 
-function latLngToXY(lat: number, lng: number) {
-    const x = ((lng + 180) / 360) * 1000;
-    const y = ((90 - lat) / 180) * 500;
-    return { x, y };
+function latLngToXY(lat: number, lng: number): { x: number; y: number } {
+    // Proyección Robinson calibrada para la imagen world-map.png (1408x768)
+    // Márgenes del óvalo: left=30, right=1378, top=18, bottom=750
+    // Mapeado al viewBox 0 0 1000 500
+
+    const mapLeft = 30;
+    const mapRight = 1378;
+    const mapTop = 18;
+    const mapBottom = 750;
+    const imgW = 1408;
+    const imgH = 768;
+
+    // Escala al viewBox 1000x500
+    const scaleX = 1000 / imgW;
+    const scaleY = 500 / imgH;
+
+    // Proyección Robinson: latitud tiene distorsión vertical no lineal
+    // Tabla de factores Robinson (latitud → factor Y normalizado 0-1)
+    const robinsonTable: [number, number][] = [
+        [-90, 1.0000], [-85, 0.9761], [-80, 0.9394], [-75, 0.8936],
+        [-70, 0.8435], [-65, 0.7903], [-60, 0.7346], [-55, 0.6769],
+        [-50, 0.6176], [-45, 0.5571], [-40, 0.4958], [-35, 0.4340],
+        [-30, 0.3720], [-25, 0.3099], [-20, 0.2480], [-15, 0.1863],
+        [-10, 0.1246], [-5, 0.0629], [0, 0.0000],
+        [5, -0.0629], [10, -0.1246], [15, -0.1863], [20, -0.2480],
+        [25, -0.3099], [30, -0.3720], [35, -0.4340], [40, -0.4958],
+        [45, -0.5571], [50, -0.6176], [55, -0.6769], [60, -0.7346],
+        [65, -0.7903], [70, -0.8435], [75, -0.8936], [80, -0.9394],
+        [85, -0.9761], [90, -1.0000],
+    ];
+
+    // Interpolar factor Y de Robinson para la latitud dada
+    function robinsonY(latDeg: number): number {
+        for (let i = 0; i < robinsonTable.length - 1; i++) {
+            const [lat0, y0] = robinsonTable[i];
+            const [lat1, y1] = robinsonTable[i + 1];
+            if (latDeg >= lat0 && latDeg <= lat1) {
+                const t = (latDeg - lat0) / (lat1 - lat0);
+                return y0 + t * (y1 - y0);
+            }
+        }
+        return latDeg >= 0 ? -1 : 1;
+    }
+
+    // Factor Y normalizado (-1 a 1) → pixel Y en imagen
+    const yFactor = robinsonY(lat);
+    const centerY = (mapTop + mapBottom) / 2;
+    const halfH = (mapBottom - mapTop) / 2;
+    const pixelY = centerY + yFactor * halfH;
+
+    // Longitud → pixel X (proyección Robinson es casi lineal en X)
+    const centerX = (mapLeft + mapRight) / 2;
+    const halfW = (mapRight - mapLeft) / 2;
+    const pixelX = centerX + (lng / 180) * halfW;
+
+    // Escalar al viewBox 1000x500
+    return {
+        x: pixelX * scaleX,
+        y: pixelY * scaleY,
+    };
 }
 
 export function NodeMap() {
@@ -93,20 +149,20 @@ export function NodeMap() {
                 overflow: "hidden",
                 position: "relative",
             }}>
-                <div style={{ position: "relative", width: "100%" }}>
-                    {/* Mapamundi real como fondo */}
+                <div style={{ position: "relative", width: "100%", background: "#0a0f1a" }}>
+                    {/* Mapamundi PNG como fondo */}
                     <img
-                        src="/world-map.svg"
+                        src="/world-map.png"
                         alt="world map"
                         style={{
                             width: "100%",
                             display: "block",
-                            opacity: 0.45,
-                            filter: "brightness(3) saturate(0.3) invert(0)",
+                            opacity: 0.3,
+                            filter: "invert(1) hue-rotate(180deg) saturate(1.5) brightness(0.8)",
                         }}
                     />
 
-                    {/* Nodos superpuestos con posición absoluta */}
+                    {/* Nodos superpuestos */}
                     <svg
                         viewBox="0 0 1000 500"
                         style={{

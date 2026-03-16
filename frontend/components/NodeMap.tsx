@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { useReadContract } from "wagmi";
 import { formatEther } from "viem";
-import { ComposableMap, Geographies, Geography, Marker, Line } from "react-simple-maps";
+import {
+    ComposableMap,
+    Geographies,
+    Geography,
+    Marker,
+    Line,
+} from "react-simple-maps";
 import { CONTRACT_ADDRESSES, NODE_REGISTRY_ABI } from "@/lib/contracts";
 import type { Node } from "@/types";
 
@@ -39,6 +45,12 @@ function getCoords(location: string): [number, number] | null {
     return key ? LOCATION_COORDS[key] : null;
 }
 
+const STAT_COLORS = {
+    nodes: "#10b981",
+    syncs: "#38bdf8",
+    network: "#a78bfa",
+} as const;
+
 export function NodeMap() {
     const [selected, setSelected] = useState<string | null>(null);
     const [tick, setTick] = useState(0);
@@ -50,7 +62,10 @@ export function NodeMap() {
     });
 
     useEffect(() => {
-        const interval = setInterval(() => { refetch(); setTick(p => p + 1); }, 10000);
+        const interval = setInterval(() => {
+            refetch();
+            setTick(p => p + 1);
+        }, 10000);
         return () => clearInterval(interval);
     }, [refetch]);
 
@@ -61,26 +76,31 @@ export function NodeMap() {
         .filter((n): n is { node: Node; coords: [number, number] } => n.coords !== null);
 
     const unmappableNodes = nodes.filter(n => !getCoords(n.location));
-
     const selectedNode = mappableNodes.find(n => n.node.owner === selected);
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-            {/* Stats */}
+            {/* ── Stats ─────────────────────────────────────────────── */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "12px" }}>
                 {[
-                    { label: "ACTIVE NODES", value: nodes.length, color: "#10b981" },
-                    { label: "ON-CHAIN SYNCS", value: tick, color: "#38bdf8" },
-                    { label: "NETWORK", value: "Monad Testnet", color: "#a78bfa" },
+                    { label: "ACTIVE NODES", value: nodes.length, color: STAT_COLORS.nodes },
+                    { label: "ON-CHAIN SYNCS", value: tick, color: STAT_COLORS.syncs },
+                    { label: "NETWORK", value: "Monad Testnet", color: STAT_COLORS.network },
                 ].map(s => (
                     <div key={s.label} style={{
                         padding: "14px 18px",
-                        background: "rgba(255,255,255,0.02)",
-                        border: `1px solid ${s.color}25`,
+                        background: "rgba(255,255,255,0.04)",
+                        border: `1px solid ${s.color}35`,
                         borderRadius: "8px",
                     }}>
-                        <div style={{ fontSize: "10px", color: "#94a3b8", letterSpacing: "0.15em", marginBottom: "6px" }}>
+                        <div style={{
+                            fontSize: "10px",
+                            color: "#94a3b8",
+                            letterSpacing: "0.15em",
+                            marginBottom: "6px",
+                            textTransform: "uppercase" as const,
+                        }}>
                             {s.label}
                         </div>
                         <div style={{ fontSize: "20px", fontWeight: "800", color: s.color }}>
@@ -90,19 +110,19 @@ export function NodeMap() {
                 ))}
             </div>
 
-            {/* Mapa */}
+            {/* ── Mapa ──────────────────────────────────────────────── */}
             <div style={{
-                background: "#0a0f1a",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: "#0d1424",
+                border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "12px",
                 overflow: "hidden",
                 position: "relative",
             }}>
                 <ComposableMap
                     projection="geoNaturalEarth1"
-                    style={{ width: "100%", height: "auto", background: "#0a0f1a" }}
+                    projectionConfig={{ scale: 147 }}
+                    style={{ width: "100%", height: "auto", background: "#0d1424" }}
                 >
-                    {/* Países */}
                     <Geographies geography={GEO_URL}>
                         {({ geographies }: { geographies: any[] }) =>
                             geographies.map((geo: any) => (
@@ -110,9 +130,9 @@ export function NodeMap() {
                                     key={geo.rsmKey}
                                     geography={geo}
                                     style={{
-                                        default: { fill: "#0f2235", stroke: "#1e3a5f", strokeWidth: 0.5, outline: "none" },
-                                        hover: { fill: "#0f2235", stroke: "#1e3a5f", strokeWidth: 0.5, outline: "none" },
-                                        pressed: { fill: "#0f2235", stroke: "#1e3a5f", strokeWidth: 0.5, outline: "none" },
+                                        default: { fill: "#1a3a5c", stroke: "#2a5a8c", strokeWidth: 0.5, outline: "none" },
+                                        hover: { fill: "#1a3a5c", stroke: "#2a5a8c", strokeWidth: 0.5, outline: "none" },
+                                        pressed: { fill: "#1a3a5c", stroke: "#2a5a8c", strokeWidth: 0.5, outline: "none" },
                                     }}
                                 />
                             ))
@@ -126,7 +146,7 @@ export function NodeMap() {
                                 key={`${nA.owner}-${nB.owner}`}
                                 from={cA}
                                 to={cB}
-                                stroke="rgba(16,185,129,0.25)"
+                                stroke="rgba(16,185,129,0.3)"
                                 strokeWidth={0.8}
                                 strokeDasharray="4 4"
                             />
@@ -144,20 +164,20 @@ export function NodeMap() {
                             >
                                 {/* Pulso */}
                                 <circle r="10" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.3">
-                                    <animate attributeName="r" values="5;16" dur="2.5s" repeatCount="indefinite" />
+                                    <animate attributeName="r" values="5;18" dur="2.5s" repeatCount="indefinite" />
                                     <animate attributeName="opacity" values="0.4;0" dur="2.5s" repeatCount="indefinite" />
                                 </circle>
 
-                                {/* Seleccionado */}
+                                {/* Ring seleccionado */}
                                 {isSelected && (
-                                    <circle r="10" fill="none" stroke="#38bdf8" strokeWidth="1.5" opacity="0.8" />
+                                    <circle r="10" fill="none" stroke="#38bdf8" strokeWidth="1.5" opacity="0.9" />
                                 )}
 
-                                {/* Punto */}
+                                {/* Punto principal */}
                                 <circle
                                     r="4"
                                     fill={isSelected ? "#38bdf8" : "#10b981"}
-                                    stroke={isSelected ? "#7dd3fc" : "#6ee7b7"}
+                                    stroke={isSelected ? "#bfdbfe" : "#6ee7b7"}
                                     strokeWidth="1.5"
                                     style={{ cursor: "pointer" }}
                                 />
@@ -166,7 +186,7 @@ export function NodeMap() {
                                 <text
                                     y={-10}
                                     textAnchor="middle"
-                                    fill="#94a3b8"
+                                    fill="#cbd5e1"
                                     fontSize="5"
                                     fontFamily="monospace"
                                     style={{ pointerEvents: "none" }}
@@ -178,20 +198,27 @@ export function NodeMap() {
                     })}
                 </ComposableMap>
 
-                {/* Panel de detalle */}
+                {/* Panel de detalle del nodo seleccionado */}
                 {selectedNode && (
                     <div style={{
                         position: "absolute",
                         bottom: "16px",
                         right: "16px",
-                        background: "rgba(6,10,15,0.95)",
-                        border: "1px solid rgba(56,189,248,0.3)",
+                        background: "rgba(6,10,15,0.97)",
+                        border: "1px solid rgba(56,189,248,0.35)",
                         borderRadius: "8px",
                         padding: "14px 18px",
                         minWidth: "220px",
+                        backdropFilter: "blur(8px)",
                     }}>
-                        <div style={{ fontSize: "10px", color: "#38bdf8", letterSpacing: "0.15em", marginBottom: "10px" }}>
-                            NODE DETAILS
+                        <div style={{
+                            fontSize: "10px",
+                            color: "#38bdf8",
+                            letterSpacing: "0.15em",
+                            marginBottom: "10px",
+                            textTransform: "uppercase" as const,
+                        }}>
+                            Node Details
                         </div>
                         {[
                             { label: "Location", value: selectedNode.node.location },
@@ -200,26 +227,45 @@ export function NodeMap() {
                             { label: "Price", value: `${formatEther(selectedNode.node.pricePerSecond)} MON/s` },
                             { label: "Status", value: "● Active" },
                         ].map(({ label, value }) => (
-                            <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", gap: "12px" }}>
-                                <span style={{ fontSize: "11px", color: "#64748b" }}>{label}</span>
-                                <span style={{ fontSize: "11px", color: "#e2e8f0" }}>{value}</span>
+                            <div key={label} style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                marginBottom: "6px",
+                                gap: "12px",
+                            }}>
+                                <span style={{ fontSize: "11px", color: "#94a3b8" }}>{label}</span>
+                                <span style={{
+                                    fontSize: "11px",
+                                    color: label === "Status" ? "#10b981" : "#f1f5f9",
+                                    fontWeight: label === "Status" ? "700" : "400",
+                                }}>
+                                    {value}
+                                </span>
                             </div>
                         ))}
                     </div>
                 )}
             </div>
 
-            {/* Nodos sin coordenadas */}
+            {/* ── Nodos sin coordenadas ─────────────────────────────── */}
             {unmappableNodes.length > 0 && (
                 <div style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: "8px",
                     overflow: "hidden",
                 }}>
-                    <div style={{ padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                        <span style={{ fontSize: "10px", color: "#94a3b8", letterSpacing: "0.15em" }}>
-                            NODES · LOCATION NOT MAPPED
+                    <div style={{
+                        padding: "10px 16px",
+                        borderBottom: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                        <span style={{
+                            fontSize: "10px",
+                            color: "#94a3b8",
+                            letterSpacing: "0.15em",
+                            textTransform: "uppercase" as const,
+                        }}>
+                            Nodes · Location Not Mapped
                         </span>
                     </div>
                     {unmappableNodes.map(node => (
@@ -227,9 +273,9 @@ export function NodeMap() {
                             display: "flex",
                             justifyContent: "space-between",
                             padding: "10px 16px",
-                            borderBottom: "1px solid rgba(255,255,255,0.03)",
+                            borderBottom: "1px solid rgba(255,255,255,0.04)",
                         }}>
-                            <span style={{ fontSize: "12px", color: "#e2e8f0" }}>{node.location}</span>
+                            <span style={{ fontSize: "12px", color: "#f1f5f9" }}>{node.location}</span>
                             <span style={{ fontSize: "11px", color: "#64748b" }}>
                                 {node.owner.slice(0, 8)}...{node.owner.slice(-4)}
                             </span>

@@ -49,71 +49,71 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.92 0 0);
+  --card: oklch(0.11 0 0);
+  --card-foreground: oklch(0.92 0 0);
+  --popover: oklch(0.11 0 0);
+  --popover-foreground: oklch(0.92 0 0);
+  --primary: oklch(0.72 0.19 162);
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.92 0 0);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.18 0 0);
+  --accent-foreground: oklch(0.92 0 0);
+  --destructive: oklch(0.65 0.22 27);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.19 162);
+  --chart-1: oklch(0.72 0.19 162);
+  --chart-2: oklch(0.65 0.18 220);
+  --chart-3: oklch(0.70 0.18 280);
+  --chart-4: oklch(0.80 0.18 84);
+  --chart-5: oklch(0.65 0.22 27);
+  --sidebar: oklch(0.11 0 0);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: oklch(0.72 0.19 162);
+  --sidebar-primary-foreground: oklch(0.08 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.72 0.19 162);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.92 0 0);
+  --card: oklch(0.11 0 0);
+  --card-foreground: oklch(0.92 0 0);
+  --popover: oklch(0.11 0 0);
+  --popover-foreground: oklch(0.92 0 0);
+  --primary: oklch(0.72 0.19 162);
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.92 0 0);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.18 0 0);
+  --accent-foreground: oklch(0.92 0 0);
+  --destructive: oklch(0.65 0.22 27);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.19 162);
+  --chart-1: oklch(0.72 0.19 162);
+  --chart-2: oklch(0.65 0.18 220);
+  --chart-3: oklch(0.70 0.18 280);
+  --chart-4: oklch(0.80 0.18 84);
+  --chart-5: oklch(0.65 0.22 27);
+  --sidebar: oklch(0.11 0 0);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: oklch(0.72 0.19 162);
+  --sidebar-primary-foreground: oklch(0.08 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.72 0.19 162);
 }
 
 @layer base {
@@ -126,7 +126,7 @@
   }
 }
 
-/* Responsive base */
+/* ── Reset base ─────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -136,9 +136,10 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  color: #e2e8f0;
 }
 
-/* Scrollbar oscuro */
+/* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -149,11 +150,11 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #2a4a6b;
   border-radius: 2px;
 }
 
-/* Inputs y selects en dark mode */
+/* ── Inputs ─────────────────────────────────────────────────── */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   opacity: 0.3;
@@ -173,52 +174,22 @@ select {
   }
 }
 
-/* Textos globales más claros */
-body {
-  color: #e2e8f0;
-}
-
+/* ── Textos globales ─────────────────────────────────────────── */
 p,
 span,
-div {
+div,
+label {
   color: inherit;
 }
 
-/* Jerarquía de colores de texto */
-.text-primary {
-  color: #f8fafc;
-}
-
-.text-secondary {
-  color: #cbd5e1;
-}
-
-.text-muted {
-  color: #64748b;
-}
-
-/* Overrides directos para los colores más usados en la dApp */
-[style*="color: \"#475569\""],
-[style*="color:#475569"] {
-  color: #94a3b8 !important;
-}
-
-[style*="color: \"#64748b\""],
-[style*="color:#64748b"] {
-  color: #94a3b8 !important;
-}
-
-[style*="color: \"#334155\""],
-[style*="color:#334155"] {
-  color: #64748b !important;
-}
-
-[style*="color: \"#1e293b\""],
-[style*="color:#1e293b"] {
-  color: #475569 !important;
-}
-
-/* SVG text en el mapa */
+/* ── SVG texto en el mapa ───────────────────────────────────── */
 svg text {
-  fill: #94a3b8 !important;
+  fill: #cbd5e1 !important;
+}
+
+/* ── Appkit modal y botones ─────────────────────────────────── */
+appkit-button,
+w3m-button {
+  --wui-color-accent-base-100: #10b981;
+  --wui-color-accent-base-090: #059669;
 }

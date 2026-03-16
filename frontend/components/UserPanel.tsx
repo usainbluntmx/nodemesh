@@ -1,21 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import {
+    useAccount, useReadContract, useWriteContract,
+    useWaitForTransactionReceipt, usePublicClient
+} from "wagmi";
 import { parseEther, formatEther } from "viem";
-import { CONTRACT_ADDRESSES, SESSION_MANAGER_ABI, NODE_REGISTRY_ABI } from "@/lib/contracts";
+import {
+    CONTRACT_ADDRESSES, SESSION_MANAGER_ABI,
+    NODE_REGISTRY_ABI
+} from "@/lib/contracts";
 import { PaymentTicker } from "./PaymentTicker";
 import type { Node } from "@/types";
 
 export function UserPanel() {
     const { address } = useAccount();
+    const publicClient = usePublicClient();
     const [selectedNode, setSelectedNode] = useState<`0x${string}` | null>(null);
     const [sessionId, setSessionId] = useState<`0x${string}` | null>(null);
     const [sessionStart, setSessionStart] = useState<number | null>(null);
     const [elapsed, setElapsed] = useState(0);
 
     const { writeContract, data: txHash, isPending } = useWriteContract();
-    const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+    const { isSuccess: isTxConfirmed, data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
     // Leer nodos activos del contrato
     const { data: onChainNodes, refetch: refetchNodes } = useReadContract({
@@ -33,7 +40,16 @@ export function UserPanel() {
         query: { enabled: !!address },
     });
 
-    // Contador de tiempo de sesión activa
+    // Leer sesión activa del usuario para obtener sessionId real
+    const { data: activeSessionData, refetch: refetchActiveSession } = useReadContract({
+        address: CONTRACT_ADDRESSES.SESSION_MANAGER,
+        abi: SESSION_MANAGER_ABI,
+        functionName: "getActiveSession",
+        args: [address as `0x${string}`],
+        query: { enabled: !!address && !!isInSession },
+    });
+
+    // Contador de tiempo
     useEffect(() => {
         if (!sessionStart) return;
         const interval = setInterval(() => {
@@ -42,13 +58,35 @@ export function UserPanel() {
         return () => clearInterval(interval);
     }, [sessionStart]);
 
-    // Refetch tras confirmar tx
+    // Tras confirmar tx — refetch y capturar sessionId
     useEffect(() => {
-        if (isTxConfirmed) {
-            refetchSession();
-            refetchNodes();
+        if (!isTxConfirmed) return;
+        refetchSession();
+        refetchNodes();
+        refetchActiveSession();
+    }, [isTxConfirmed, refetchSession, refetchNodes, refetchActiveSession]);
+
+    // Capturar sessionId desde contrato una vez que la sesión esté activa
+    useEffect(() => {
+        if (!activeSessionData) return;
+        const session = activeSessionData as any;
+        if (session?.active && session?.sessionId) {
+            setSessionId(session.sessionId as `0x${string}`);
+            if (!sessionStart) {
+                setSessionStart(Number(session.startTime));
+            }
         }
-    }, [isTxConfirmed, refetchSession, refetchNodes]);
+    }, [activeSessionData]);
+
+    // Limpiar estado al cerrar sesión
+    useEffect(() => {
+        if (!isTxConfirmed) return;
+        if (!isInSession && sessionId) {
+            setSessionId(null);
+            setSessionStart(null);
+            setElapsed(0);
+        }
+    }, [isTxConfirmed, isInSession]);
 
     function handleOpenSession() {
         if (!selectedNode) return;
@@ -70,9 +108,6 @@ export function UserPanel() {
             functionName: "closeSession",
             args: [sessionId],
         });
-        setSessionId(null);
-        setSessionStart(null);
-        setElapsed(0);
     }
 
     function formatElapsed(seconds: number) {
@@ -85,13 +120,13 @@ export function UserPanel() {
     const nodes = (onChainNodes as Node[] | undefined) ?? [];
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "640px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "640px", width: "100%" }}>
 
             {/* Estado de sesión */}
             <div style={{
                 padding: "16px 20px",
-                background: activeSession ? "rgba(16,185,129,0.07)" : "rgba(255,255,255,0.02)",
-                border: `1px solid ${activeSession ? "rgba(16,185,129,0.35)" : "rgba(255,255,255,0.06)"}`,
+                background: activeSession ? "rgba(16,185,129,0.07)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${activeSession ? "rgba(16,185,129,0.35)" : "rgba(255,255,255,0.1)"}`,
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
@@ -99,11 +134,13 @@ export function UserPanel() {
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{
-                        width: "8px", height: "8px", borderRadius: "50%",
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
                         background: activeSession ? "#10b981" : "#475569",
                         boxShadow: activeSession ? "0 0 8px #10b981" : "none",
                     }} />
-                    <span style={{ fontSize: "12px", color: activeSession ? "#6ee7b7" : "#475569" }}>
+                    <span style={{ fontSize: "12px", color: activeSession ? "#6ee7b7" : "#94a3b8" }}>
                         {activeSession ? "SESSION ACTIVE" : "NO ACTIVE SESSION"}
                     </span>
                 </div>
@@ -117,20 +154,20 @@ export function UserPanel() {
             {/* Selección de nodo */}
             {!activeSession && (
                 <div style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: "8px",
                     overflow: "hidden",
                 }}>
-                    <div style={{ padding: "12px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                        <span style={{ fontSize: "10px", color: "#475569", letterSpacing: "0.15em" }}>
+                    <div style={{ padding: "12px 18px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                        <span style={{ fontSize: "10px", color: "#94a3b8", letterSpacing: "0.15em" }}>
                             SELECT NODE · {nodes.length} available
                         </span>
                     </div>
 
                     {nodes.length === 0 ? (
                         <div style={{ padding: "24px 18px", textAlign: "center" }}>
-                            <span style={{ fontSize: "12px", color: "#334155" }}>
+                            <span style={{ fontSize: "12px", color: "#475569" }}>
                                 No active nodes found. Register one in Provide & Earn.
                             </span>
                         </div>
@@ -145,7 +182,7 @@ export function UserPanel() {
                                     justifyContent: "space-between",
                                     padding: "14px 18px",
                                     cursor: "pointer",
-                                    borderBottom: "1px solid rgba(255,255,255,0.03)",
+                                    borderBottom: "1px solid rgba(255,255,255,0.04)",
                                     background: selectedNode === node.owner
                                         ? "rgba(56,189,248,0.07)"
                                         : "transparent",
@@ -154,15 +191,18 @@ export function UserPanel() {
                             >
                                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                                     <div style={{
-                                        width: "8px", height: "8px", borderRadius: "50%",
-                                        background: selectedNode === node.owner ? "#38bdf8" : "#1e4d3a",
+                                        width: "8px",
+                                        height: "8px",
+                                        borderRadius: "50%",
+                                        background: selectedNode === node.owner ? "#38bdf8" : "#10b981",
                                         border: `1px solid ${selectedNode === node.owner ? "#38bdf8" : "#10b981"}`,
+                                        boxShadow: selectedNode === node.owner ? "0 0 6px #38bdf8" : "0 0 6px #10b981",
                                     }} />
                                     <div>
                                         <div style={{ fontSize: "13px", color: "#f1f5f9", fontWeight: "600" }}>
                                             {node.location}
                                         </div>
-                                        <div style={{ fontSize: "11px", color: "#475569", marginTop: "2px" }}>
+                                        <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
                                             {node.owner.slice(0, 10)}...{node.owner.slice(-4)}
                                         </div>
                                     </div>
@@ -171,7 +211,7 @@ export function UserPanel() {
                                     <div style={{ fontSize: "12px", color: "#38bdf8" }}>
                                         {node.bandwidth.toString()} Mbps
                                     </div>
-                                    <div style={{ fontSize: "11px", color: "#475569" }}>
+                                    <div style={{ fontSize: "11px", color: "#64748b" }}>
                                         {formatEther(node.pricePerSecond)} MON/s
                                     </div>
                                 </div>
@@ -214,7 +254,7 @@ export function UserPanel() {
             </button>
 
             {!activeSession && (
-                <p style={{ fontSize: "11px", color: "#334155", margin: 0, lineHeight: "1.6" }}>
+                <p style={{ fontSize: "11px", color: "#64748b", margin: 0, lineHeight: "1.6" }}>
                     El depósito de 0.01 MON queda en escrow. Al cerrar la sesión, se descuenta
                     el tiempo usado y el resto se reembolsa automáticamente.
                 </p>

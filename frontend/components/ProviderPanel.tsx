@@ -54,6 +54,14 @@ export function ProviderPanel() {
         query: { enabled: !!address },
     });
 
+    // Contar sesiones activas en este nodo
+    const { data: totalNodes } = useReadContract({
+        address: CONTRACT_ADDRESSES.NODE_REGISTRY,
+        abi: NODE_REGISTRY_ABI,
+        functionName: "getTotalNodes",
+        query: { enabled: !!address },
+    });
+
     const node = nodeData as any;
     const isRegistered = node && node.owner !== "0x0000000000000000000000000000000000000000";
 
@@ -67,15 +75,6 @@ export function ProviderPanel() {
     useEffect(() => {
         if (pendingEarnings) setEarnings(pendingEarnings as bigint);
     }, [pendingEarnings]);
-
-    useEffect(() => {
-        if (!nodeData) return;
-        if (!node?.active) return;
-        const interval = setInterval(() => {
-            setEarnings(prev => prev + parseEther("0.000001"));
-        }, 3000);
-        return () => clearInterval(interval);
-    }, [nodeData, node?.active]);
 
     function handleRegisterNode() {
         if (!location || !bandwidth || !pricePerSecond) return;
@@ -204,6 +203,7 @@ export function ProviderPanel() {
                             { label: "Price/sec", value: `${formatEther(node.pricePerSecond)} MON` },
                             { label: "Staked", value: `${formatEther(node.stakedAmount)} MON` },
                             { label: "Status", value: node.active ? "● Active" : "○ Inactive" },
+                            { label: "Total Nodes", value: totalNodes ? totalNodes.toString() : "0" },
                         ].map(({ label, value }) => (
                             <div key={label} style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "4px" }}>
                                 <span style={{ fontSize: "12px", color: "#475569" }}>{label}</span>

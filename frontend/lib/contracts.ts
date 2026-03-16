@@ -80,6 +80,13 @@ export const NODE_REGISTRY_ABI = [
         inputs: [],
         outputs: [{ name: "", type: "uint256" }],
     },
+    {
+        name: "getTotalNodes",
+        type: "function",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [{ name: "", type: "uint256" }],
+    },
 ] as const;
 
 export const SESSION_MANAGER_ABI = [
@@ -131,6 +138,13 @@ export const SESSION_MANAGER_ABI = [
         stateMutability: "view",
         inputs: [],
         outputs: [{ name: "", type: "uint256" }],
+    },
+    {
+        name: "activeSessionByUser",
+        type: "function",
+        stateMutability: "view",
+        inputs: [{ name: "", type: "address" }],
+        outputs: [{ name: "", type: "bytes32" }],
     },
 ] as const;
 

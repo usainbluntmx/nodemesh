@@ -101,9 +101,8 @@ export function NodeMap() {
                         style={{
                             width: "100%",
                             display: "block",
-                            opacity: 0.7,
+                            opacity: 1,
                             filter: "none",
-                            background: "#0a0f1a",
                         }}
                     />
 

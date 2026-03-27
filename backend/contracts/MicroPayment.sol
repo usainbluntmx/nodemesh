@@ -124,21 +124,23 @@ contract MicroPayment {
     }
 
     function refundUnused(bytes32 _sessionId) external {
-        ISessionManager.Session memory session = sessionManager.getSession(_sessionId);
+    ISessionManager.Session memory session = sessionManager.getSession(_sessionId);
 
-        if (session.active)             revert SessionStillActive();
-        if (session.user != msg.sender) revert NotSessionUser();
+    if (session.active)             revert SessionStillActive();
+    if (session.user != msg.sender) revert NotSessionUser();
 
-        uint256 paid   = totalPaidPerSession[_sessionId];
-        uint256 refund = session.deposit - paid;
-        if (refund == 0) revert NothingToClaim();
+    uint256 paid   = totalPaidPerSession[_sessionId];
+    uint256 refund = session.deposit - paid;
 
-        totalPaidPerSession[_sessionId] = session.deposit;
+    // Si no hay remanente, terminar silenciosamente
+    if (refund == 0) return;
 
-        (bool success, ) = payable(msg.sender).call{value: refund}("");
-        if (!success) revert TransferFailed();
+    totalPaidPerSession[_sessionId] = session.deposit;
 
-        emit UnusedRefunded(_sessionId, msg.sender, refund);
+    (bool success, ) = payable(msg.sender).call{value: refund}("");
+    if (!success) revert TransferFailed();
+
+    emit UnusedRefunded(_sessionId, msg.sender, refund);
     }
 
     function getAccruedAmount(bytes32 _sessionId) external view returns (uint256) {

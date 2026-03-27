@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
     useAccount, useReadContract, useWriteContract,
-    useWaitForTransactionReceipt, usePublicClient
+    useWaitForTransactionReceipt
 } from "wagmi";
 import { parseEther, formatEther } from "viem";
 import {
@@ -13,25 +13,29 @@ import {
 import { PaymentTicker } from "./PaymentTicker";
 import type { Node } from "@/types";
 
+type Step = "idle" | "streaming" | "closing" | "refunding";
+
 export function UserPanel() {
     const { address } = useAccount();
-    const publicClient = usePublicClient();
+
     const [selectedNode, setSelectedNode] = useState<`0x${string}` | null>(null);
     const [sessionId, setSessionId] = useState<`0x${string}` | null>(null);
     const [sessionStart, setSessionStart] = useState<number | null>(null);
     const [elapsed, setElapsed] = useState(0);
+    const [closingId, setClosingId] = useState<`0x${string}` | null>(null);
+    const [step, setStep] = useState<Step>("idle");
 
     const { writeContract, data: txHash, isPending } = useWriteContract();
-    const { isSuccess: isTxConfirmed, data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
+    const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
 
-    // Leer nodos activos del contrato
+    // ─── Reads ───────────────────────────────────────────────────────────────
+
     const { data: onChainNodes, refetch: refetchNodes } = useReadContract({
         address: CONTRACT_ADDRESSES.NODE_REGISTRY,
         abi: NODE_REGISTRY_ABI,
         functionName: "getActiveNodes",
     });
 
-    // Leer si el usuario ya tiene sesión activa
     const { data: isInSession, refetch: refetchSession } = useReadContract({
         address: CONTRACT_ADDRESSES.SESSION_MANAGER,
         abi: SESSION_MANAGER_ABI,
@@ -40,7 +44,6 @@ export function UserPanel() {
         query: { enabled: !!address },
     });
 
-    // Leer sesión activa del usuario para obtener sessionId real
     const { data: activeSessionData, refetch: refetchActiveSession } = useReadContract({
         address: CONTRACT_ADDRESSES.SESSION_MANAGER,
         abi: SESSION_MANAGER_ABI,
@@ -49,58 +52,99 @@ export function UserPanel() {
         query: { enabled: !!address && !!isInSession },
     });
 
-    const [pendingRefund, setPendingRefund] = useState<`0x${string}` | null>(null);
+    const { data: totalPaidData } = useReadContract({
+        address: CONTRACT_ADDRESSES.MICRO_PAYMENT,
+        abi: MICRO_PAYMENT_ABI,
+        functionName: "totalPaidPerSession",
+        args: closingId ? [closingId] : undefined,
+        query: { enabled: !!closingId },
+    });
 
-    // Cuando se confirma closeSession, ejecutar refundUnused
-    useEffect(() => {
-        if (!isTxConfirmed || !pendingRefund) return;
-        writeContract({
-            address: CONTRACT_ADDRESSES.MICRO_PAYMENT,
-            abi: MICRO_PAYMENT_ABI,
-            functionName: "refundUnused",
-            args: [pendingRefund],
-        });
-        setPendingRefund(null);
-    }, [isTxConfirmed, pendingRefund]);
+    // ─── Effects ─────────────────────────────────────────────────────────────
 
-    // Contador de tiempo
+    // Contador de tiempo de sesión
     useEffect(() => {
         if (!sessionStart) return;
         const interval = setInterval(() => {
-            setElapsed(Math.floor((Date.now() / 1000) - sessionStart));
+            setElapsed(Math.floor(Date.now() / 1000 - sessionStart));
         }, 1000);
         return () => clearInterval(interval);
     }, [sessionStart]);
 
-    // Tras confirmar tx — refetch y capturar sessionId
-    useEffect(() => {
-        if (!isTxConfirmed) return;
-        refetchSession();
-        refetchNodes();
-        refetchActiveSession();
-    }, [isTxConfirmed, refetchSession, refetchNodes, refetchActiveSession]);
-
-    // Capturar sessionId desde contrato una vez que la sesión esté activa
+    // Capturar sessionId desde el contrato
     useEffect(() => {
         if (!activeSessionData) return;
         const session = activeSessionData as any;
         if (session?.active && session?.sessionId) {
             setSessionId(session.sessionId as `0x${string}`);
-            if (!sessionStart) {
-                setSessionStart(Number(session.startTime));
-            }
+            if (!sessionStart) setSessionStart(Number(session.startTime));
         }
     }, [activeSessionData]);
 
-    // Limpiar estado al cerrar sesión
+    // Máquina de estados: streaming → closing → refunding
     useEffect(() => {
         if (!isTxConfirmed) return;
-        if (!isInSession && sessionId) {
+
+        if (step === "streaming" && closingId) {
+            setStep("closing");
+            writeContract({
+                address: CONTRACT_ADDRESSES.SESSION_MANAGER,
+                abi: SESSION_MANAGER_ABI,
+                functionName: "closeSession",
+                args: [closingId],
+            });
+            return;
+        }
+
+        if (step === "closing" && closingId) {
+            const paid = (totalPaidData as bigint) ?? 0n;
+            const session = activeSessionData as any;
+            const deposit = session?.deposit ?? 0n;
+            const refund = deposit - paid;
+
+            if (refund > 0n) {
+                // Hay remanente — ejecutar refund
+                setStep("refunding");
+                writeContract({
+                    address: CONTRACT_ADDRESSES.MICRO_PAYMENT,
+                    abi: MICRO_PAYMENT_ABI,
+                    functionName: "refundUnused",
+                    args: [closingId],
+                });
+            } else {
+                // Sin remanente — flujo completo directo
+                setStep("idle");
+                setClosingId(null);
+                setSessionId(null);
+                setSessionStart(null);
+                setElapsed(0);
+                refetchSession();
+                refetchNodes();
+                refetchActiveSession();
+            }
+            return;
+        }
+
+        if (step === "refunding") {
+            // Flujo completo — limpiar todo
+            setStep("idle");
+            setClosingId(null);
             setSessionId(null);
             setSessionStart(null);
             setElapsed(0);
+            refetchSession();
+            refetchNodes();
+            refetchActiveSession();
+            return;
         }
-    }, [isTxConfirmed, isInSession]);
+
+        // tx confirmada fuera del flujo de cierre — refetch general
+        refetchSession();
+        refetchNodes();
+        refetchActiveSession();
+    }, [isTxConfirmed]);
+
+    // ─── Handlers ────────────────────────────────────────────────────────────
 
     function handleOpenSession() {
         if (!selectedNode) return;
@@ -116,11 +160,13 @@ export function UserPanel() {
 
     function handleCloseSession() {
         if (!sessionId) return;
-        setPendingRefund(sessionId);
+        setClosingId(sessionId);
+        setStep("streaming");
+        // Paso 1: liquidar pago al proveedor
         writeContract({
-            address: CONTRACT_ADDRESSES.SESSION_MANAGER,
-            abi: SESSION_MANAGER_ABI,
-            functionName: "closeSession",
+            address: CONTRACT_ADDRESSES.MICRO_PAYMENT,
+            abi: MICRO_PAYMENT_ABI,
+            functionName: "streamPayment",
             args: [sessionId],
         });
     }
@@ -131,8 +177,21 @@ export function UserPanel() {
         return `${m}:${s}`;
     }
 
+    function getButtonLabel() {
+        if (!isPending && step === "idle") {
+            return activeSession ? "CLOSE SESSION" : "OPEN SESSION · 0.01 MON deposit";
+        }
+        if (step === "streaming") return "PROCESSING PAYMENT...";
+        if (step === "closing") return "CLOSING SESSION...";
+        if (step === "refunding") return "REFUNDING DEPOSIT...";
+        return "CONFIRMING...";
+    }
+
+    // ─── Derived state ───────────────────────────────────────────────────────
+
     const activeSession = isInSession as boolean | undefined;
     const nodes = (onChainNodes as Node[] | undefined) ?? [];
+    const isClosing = step !== "idle";
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "640px", width: "100%" }}>
@@ -165,6 +224,43 @@ export function UserPanel() {
                     </span>
                 )}
             </div>
+
+            {/* Progreso de cierre */}
+            {isClosing && (
+                <div style={{
+                    padding: "12px 18px",
+                    background: "rgba(251,191,36,0.06)",
+                    border: "1px solid rgba(251,191,36,0.2)",
+                    borderRadius: "8px",
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "center",
+                }}>
+                    {["streaming", "closing", "refunding"].map((s, i) => (
+                        <div key={s} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <div style={{
+                                width: "8px",
+                                height: "8px",
+                                borderRadius: "50%",
+                                background: step === s
+                                    ? "#fbbf24"
+                                    : ["streaming", "closing", "refunding"].indexOf(step) > i
+                                        ? "#10b981"
+                                        : "#1e293b",
+                                transition: "background 0.3s",
+                            }} />
+                            <span style={{
+                                fontSize: "10px",
+                                color: step === s ? "#fbbf24" : "#475569",
+                                letterSpacing: "0.1em",
+                            }}>
+                                {s === "streaming" ? "PAYING" : s === "closing" ? "CLOSING" : "REFUNDING"}
+                            </span>
+                            {i < 2 && <span style={{ color: "#1e293b", fontSize: "10px" }}>→</span>}
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Selección de nodo */}
             {!activeSession && (
@@ -210,7 +306,6 @@ export function UserPanel() {
                                         height: "8px",
                                         borderRadius: "50%",
                                         background: selectedNode === node.owner ? "#38bdf8" : "#10b981",
-                                        border: `1px solid ${selectedNode === node.owner ? "#38bdf8" : "#10b981"}`,
                                         boxShadow: selectedNode === node.owner ? "0 0 6px #38bdf8" : "0 0 6px #10b981",
                                     }} />
                                     <div>
@@ -236,7 +331,7 @@ export function UserPanel() {
                 </div>
             )}
 
-            {/* Payment ticker activo */}
+            {/* Payment ticker */}
             {activeSession && sessionId && (
                 <PaymentTicker sessionId={sessionId} />
             )}
@@ -244,12 +339,12 @@ export function UserPanel() {
             {/* Botón de acción */}
             <button
                 onClick={activeSession ? handleCloseSession : handleOpenSession}
-                disabled={(!selectedNode && !activeSession) || isPending}
+                disabled={(!selectedNode && !activeSession) || isPending || isClosing}
                 style={{
                     padding: "14px",
                     borderRadius: "8px",
                     border: "none",
-                    cursor: (!selectedNode && !activeSession) || isPending ? "not-allowed" : "pointer",
+                    cursor: (!selectedNode && !activeSession) || isPending || isClosing ? "not-allowed" : "pointer",
                     fontSize: "13px",
                     fontFamily: "inherit",
                     fontWeight: "800",
@@ -258,14 +353,10 @@ export function UserPanel() {
                     background: activeSession ? "rgba(248,113,113,0.1)" : "rgba(16,185,129,0.1)",
                     color: activeSession ? "#f87171" : "#6ee7b7",
                     outline: `1px solid ${activeSession ? "rgba(248,113,113,0.3)" : "rgba(16,185,129,0.3)"}`,
-                    opacity: ((!selectedNode && !activeSession) || isPending) ? 0.4 : 1,
+                    opacity: (!selectedNode && !activeSession) || isPending || isClosing ? 0.6 : 1,
                 }}
             >
-                {isPending
-                    ? "CONFIRMING..."
-                    : activeSession
-                        ? "CLOSE SESSION"
-                        : "OPEN SESSION · 0.01 MON deposit"}
+                {getButtonLabel()}
             </button>
 
             {!activeSession && (

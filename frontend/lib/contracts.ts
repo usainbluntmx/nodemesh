@@ -184,4 +184,12 @@ export const MICRO_PAYMENT_ABI = [
         inputs: [{ name: "", type: "address" }],
         outputs: [{ name: "", type: "uint256" }],
     },
+
+    {
+        name: "totalPaidPerSession",
+        type: "function",
+        stateMutability: "view",
+        inputs: [{ name: "", type: "bytes32" }],
+        outputs: [{ name: "", type: "uint256" }],
+    },
 ] as const;

@@ -1,516 +1,199 @@
-# template-evm
+# NodeMesh
 
-A personal, production-ready template for building EVM-compatible decentralized applications (dApps) and protocols. Designed to be cloned, configured, and deployed quickly for hackathons, competitions, or personal projects.
-
-Supports **Arbitrum**, **Base**, and **Monad** out of the box, with easy extensibility to any EVM-compatible chain.
+Red P2P de bandwidth descentralizada construida sobre Monad. Los proveedores monetizan su ancho de banda y los usuarios pagan únicamente por los segundos que consumen — sin intermediarios, sin censura, con liquidación instantánea on-chain.
 
 ---
 
-## Table of Contents
+## ¿Qué problema resuelve?
 
-- [What Is This?](#what-is-this)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Backend Guide](#backend-guide)
-- [Frontend Guide](#frontend-guide)
-- [Environment Variables](#environment-variables)
-- [Available Scripts](#available-scripts)
-- [Deploying a Smart Contract](#deploying-a-smart-contract)
-- [Verifying a Smart Contract](#verifying-a-smart-contract)
-- [Running Tests](#running-tests)
-- [Deploying the Frontend to Vercel](#deploying-the-frontend-to-vercel)
-- [Using This Template for a New Project](#using-this-template-for-a-new-project)
-- [Supported Networks](#supported-networks)
-- [Glossary](#glossary)
+Las VPNs centralizadas guardan logs, pueden ser confiscadas y cobran suscripciones fijas aunque no las uses. NodeMesh elimina al intermediario: el proveedor y el usuario se conectan directamente, y el pago ocurre automáticamente por cada segundo de sesión activa.
 
 ---
 
-## What Is This?
-
-`template-evm` is a full-stack monorepo template built to accelerate the development of Ethereum-compatible dApps. It comes pre-configured with everything you need:
-
-- A **Hardhat** environment for writing, compiling, testing, and deploying Solidity smart contracts.
-- A **Next.js** frontend with wallet connection powered by Reown AppKit and Wagmi.
-- Multi-chain support with a centralized network configuration.
-- Automated deploy and verification scripts.
-- Code quality tools (ESLint, Prettier, solhint) already configured.
-
-The goal is simple: clone this repo, replace the example contract and frontend with your own, fill in your environment variables, and you are ready to ship.
-
----
-
-## Tech Stack
-
-### Backend
-
-| Tool | Purpose |
-|---|---|
-| [Hardhat v2](https://hardhat.org/) | Ethereum development environment |
-| [Solidity ^0.8.28](https://soliditylang.org/) | Smart contract language |
-| [OpenZeppelin Contracts](https://www.openzeppelin.com/contracts) | Secure, audited contract libraries |
-| [hardhat-deploy](https://github.com/wighawag/hardhat-deploy) | Deterministic deployment system |
-| [hardhat-toolbox](https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-toolbox) | Bundled Hardhat plugins |
-| [hardhat-network-helpers](https://hardhat.org/hardhat-network/docs/helpers) | Test utilities (time manipulation, snapshots) |
-| [hardhat-gas-reporter](https://github.com/cgewecke/hardhat-gas-reporter) | Gas usage reports during tests |
-| [solidity-coverage](https://github.com/sc-forks/solidity-coverage) | Code coverage for Solidity |
-| [TypeChain](https://github.com/dethcrypto/TypeChain) | TypeScript bindings for contracts |
-| [Mocha](https://mochajs.org/) + [Chai](https://www.chaijs.com/) | Testing framework and assertions |
-| [solhint](https://protofire.github.io/solhint/) | Solidity linter |
-| [Prettier](https://prettier.io/) + [prettier-plugin-solidity](https://github.com/prettier-solidity/prettier-plugin-solidity) | Code formatter |
-| [dotenv](https://github.com/motdotla/dotenv) | Environment variable management |
-| [ethers v6](https://docs.ethers.org/v6/) | Ethereum library |
-
-### Frontend
-
-| Tool | Purpose |
-|---|---|
-| [Next.js 15](https://nextjs.org/) | React framework with SSR and Vercel-native deployment |
-| [React 19](https://react.dev/) | UI library |
-| [TypeScript](https://www.typescriptlang.org/) | Typed JavaScript |
-| [Wagmi](https://wagmi.sh/) | React hooks for Ethereum |
-| [Viem](https://viem.sh/) | TypeScript Ethereum client |
-| [Reown AppKit](https://reown.com/appkit) | Wallet connection modal and session management |
-| [TanStack Query](https://tanstack.com/query) | Async state management |
-| [Tailwind CSS v4](https://tailwindcss.com/) | Utility-first CSS framework |
-| [shadcn/ui](https://ui.shadcn.com/) | Accessible, composable UI components |
-| [ESLint](https://eslint.org/) | JavaScript/TypeScript linter |
-| [Prettier](https://prettier.io/) | Code formatter |
-
----
-
-## Project Structure
-
+## Cómo funciona
 ```
-template-evm/
-├── .gitignore                  # Global Git ignore rules
-├── backend/
-│   ├── contracts/
-│   │   └── Counter.sol         # Example contract (replace with yours)
-│   ├── deploy/
-│   │   └── 01_deploy_counter.ts  # Deploy script (one file per contract)
-│   ├── scripts/
-│   │   └── deploy-and-verify.ts  # Automated deploy + verify in one command
-│   ├── test/
-│   │   └── Counter.test.ts     # Contract tests
-│   ├── typechain-types/        # Auto-generated TypeScript typings (do not edit)
-│   ├── .env                    # Your private environment variables (never commit)
-│   ├── .prettierrc             # Prettier config for Solidity
-│   ├── .solhint.json           # Solidity linting rules
-│   ├── hardhat.config.ts       # Hardhat + network + plugin configuration
-│   ├── package.json
-│   └── tsconfig.json
-└── frontend/
-    ├── app/
-    │   ├── globals.css         # Global styles
-    │   ├── layout.tsx          # Root layout with AppKitProvider
-    │   └── page.tsx            # Home page
-    ├── components/ui/          # shadcn/ui components (add via CLI)
-    ├── config/
-    │   ├── appkit.ts           # Reown AppKit + Wagmi adapter config
-    │   └── chains.ts           # Centralized network definitions
-    ├── context/
-    │   └── AppKitProvider.tsx  # Global wallet provider
-    ├── hooks/                  # Custom React hooks (add yours here)
-    ├── lib/
-    │   └── utils.ts            # shadcn/ui utility functions
-    ├── public/                 # Static assets
-    ├── .env.local              # Your private environment variables (never commit)
-    ├── .prettierrc             # Prettier config for TypeScript/React
-    ├── components.json         # shadcn/ui configuration
-    ├── eslint.config.mjs       # ESLint configuration
-    ├── next.config.ts          # Next.js configuration
-    ├── package.json
-    └── tsconfig.json
+Proveedor registra nodo → Usuario abre sesión + deposita MON
+→ Sesión activa (micropagos acumulándose)
+→ Usuario cierra sesión
+→ Proveedor recibe pago en MON
+→ Usuario recibe reembolso del depósito no utilizado
 ```
 
+Todo ocurre on-chain. Sin custodia. Sin confianza entre partes.
+
 ---
 
-## Prerequisites
+## Contratos deployados — Monad Testnet
 
-Before using this template, make sure you have the following installed on your machine:
-
-| Requirement | Minimum Version | Check |
+| Contrato | Address | Explorer |
 |---|---|---|
-| [Node.js](https://nodejs.org/) | v22 or higher | `node --version` |
-| [npm](https://www.npmjs.com/) | v10 or higher | `npm --version` |
-| [Git](https://git-scm.com/) | Any recent version | `git --version` |
-
-You will also need:
-
-- A crypto wallet (e.g., [MetaMask](https://metamask.io/)) to interact with the dApp.
-- A **Reown Project ID** (free) from [cloud.reown.com](https://cloud.reown.com) for wallet connection.
-- RPC URLs for the networks you want to deploy to (e.g., from [Alchemy](https://www.alchemy.com/) or [Infura](https://infura.io/)).
-- Explorer API keys for contract verification (e.g., [Arbiscan](https://arbiscan.io/), [Basescan](https://basescan.org/)).
+| NodeRegistry | `0x554d242eBf4e5d5896069023D8ACe1a76A445D83` | [Ver](https://testnet.monadexplorer.com/address/0x554d242eBf4e5d5896069023D8ACe1a76A445D83) |
+| SessionManager | `0x9efed651f02dB27E173B4aed4697dd774571D9f3` | [Ver](https://testnet.monadexplorer.com/address/0x9efed651f02dB27E173B4aed4697dd774571D9f3) |
+| MicroPayment | `0xF0fC0EA4A8CcDB16bc9d482e9b93C9b3b01A3ddf` | [Ver](https://testnet.monadexplorer.com/address/0xF0fC0EA4A8CcDB16bc9d482e9b93C9b3b01A3ddf) |
+| ReputationSBT | `0xf6C6aa8dFd32618F8d3703F0BcB40456c032fbb3` | [Ver](https://testnet.monadexplorer.com/address/0xf6C6aa8dFd32618F8d3703F0BcB40456c032fbb3) |
 
 ---
 
-## Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone <your-repo-url>
-cd template-evm
+## Arquitectura
+```
+nodemesh/
+├── backend/                    # Contratos Solidity + scripts Hardhat
+│   ├── contracts/
+│   │   ├── NodeRegistry.sol    # Registro de nodos con staking mínimo
+│   │   ├── SessionManager.sol  # Apertura/cierre de sesiones VPN
+│   │   ├── MicroPayment.sol    # Streaming de pagos + reembolsos
+│   │   └── ReputationSBT.sol   # Soulbound Token de reputación
+│   └── deploy/
+│       └── 01_deploy_nodemesh.js
+└── frontend/                   # Next.js 15 + Wagmi + Reown AppKit
+    ├── app/
+    ├── components/
+    │   ├── Dashboard.tsx        # Layout bento desktop / tabs mobile
+    │   ├── NodeMap.tsx          # Mapa mundial con nodos on-chain
+    │   ├── UserPanel.tsx        # Flujo de sesión para usuarios
+    │   ├── ProviderPanel.tsx    # Registro de nodos y claim de earnings
+    │   └── PaymentTicker.tsx    # Visualización de pagos en tiempo real
+    ├── hooks/
+    ├── lib/
+    │   ├── contracts.ts         # ABIs + addresses
+    │   └── monad.ts             # Configuración de la chain
+    └── types/
 ```
 
-### 2. Install backend dependencies
+---
 
+## Stack técnico
+
+| Capa | Tecnología |
+|---|---|
+| Blockchain | Monad Testnet (chainId 10143) |
+| Smart Contracts | Solidity ^0.8.28 |
+| Framework de deploy | Hardhat + hardhat-deploy |
+| Frontend | Next.js 15 + TypeScript |
+| Wallet / Web3 | Wagmi v2 + Viem + Reown AppKit |
+| Mapa | react-simple-maps + Natural Earth |
+| Deploy | Vercel |
+
+---
+
+## Correr localmente
+
+### Requisitos
+
+- Node.js 18+
+- Git
+
+### 1. Clonar el repositorio
+```bash
+git clone https://github.com/usainbluntmx/nodemesh.git
+cd nodemesh
+```
+
+### 2. Instalar dependencias del backend
 ```bash
 cd backend
 npm install
 ```
 
-### 3. Install frontend dependencies
-
+### 3. Configurar variables de entorno del backend
 ```bash
-cd ../frontend
-npm install
+# backend/.env
+PRIVATE_KEY=tu_private_key_sin_0x
+MONAD_TESTNET_RPC_URL=https://testnet-rpc.monad.xyz
 ```
 
-### 4. Configure environment variables
-
-See the [Environment Variables](#environment-variables) section below.
-
----
-
-## Backend Guide
-
-The backend is a Hardhat project located in the `backend/` folder.
-
-### Compile contracts
-
+### 4. Compilar contratos
 ```bash
-cd backend
 npm run compile
 ```
 
-This compiles all `.sol` files in `contracts/` and auto-generates TypeScript typings in `typechain-types/`.
-
-### Run tests
-
+### 5. Instalar dependencias del frontend
 ```bash
-npm run test
+cd ../frontend
+npm install --legacy-peer-deps
 ```
 
-### Check code coverage
-
+### 6. Configurar variables de entorno del frontend
 ```bash
-npm run coverage
+# frontend/.env.local
+NEXT_PUBLIC_NODE_REGISTRY=0x554d242eBf4e5d5896069023D8ACe1a76A445D83
+NEXT_PUBLIC_SESSION_MANAGER=0x9efed651f02dB27E173B4aed4697dd774571D9f3
+NEXT_PUBLIC_MICRO_PAYMENT=0xF0fC0EA4A8CcDB16bc9d482e9b93C9b3b01A3ddf
+NEXT_PUBLIC_REPUTATION_SBT=0xf6C6aa8dFd32618F8d3703F0BcB40456c032fbb3
+NEXT_PUBLIC_REOWN_PROJECT_ID=tu_project_id
 ```
 
-### Start a local blockchain node
-
+### 7. Correr el frontend
 ```bash
-npm run node
-```
-
-This starts a local Hardhat node at `http://127.0.0.1:8545` with pre-funded test accounts. Keep this terminal open while developing locally.
-
-### Clean build artifacts
-
-```bash
-npm run clean
-```
-
----
-
-## Frontend Guide
-
-The frontend is a Next.js project located in the `frontend/` folder.
-
-### Start development server
-
-```bash
-cd frontend
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Build for production
-
-```bash
-npm run build
-```
-
-### Start production server locally
-
-```bash
-npm run start
-```
-
-### Add a shadcn/ui component
-
-```bash
-npx shadcn@latest add button
-```
-
-Replace `button` with any component from the [shadcn/ui catalog](https://ui.shadcn.com/docs/components).
+Abre `http://localhost:3000`
 
 ---
 
-## Environment Variables
+## Flujo de demo
 
-### Backend — `backend/.env`
+### Como proveedor (Wallet A)
+1. Conectar wallet en Monad Testnet
+2. Ir a **⚡ Provide & Earn**
+3. Seleccionar ubicación, bandwidth y precio por segundo
+4. Click en **Register Node** (requiere 0.01 MON de stake)
+5. El nodo aparece activo en el mapa y disponible para usuarios
 
-```bash
-# Your wallet private key (without 0x prefix)
-PRIVATE_KEY=
+### Como usuario (Wallet B)
+1. Conectar wallet en Monad Testnet
+2. Ir a **👤 Use Bandwidth**
+3. Seleccionar un nodo disponible
+4. Click en **Open Session** (deposita 0.01 MON en escrow)
+5. Usar el servicio — el ticker muestra el costo acumulándose
+6. Click en **Close Session**
+   - El contrato calcula el tiempo usado
+   - El proveedor recibe el pago en MON
+   - El remanente se reembolsa al usuario automáticamente
 
-# RPC URLs — get these from Alchemy, Infura, or your provider
-ARBITRUM_RPC_URL=
-ARBITRUM_SEPOLIA_RPC_URL=
-BASE_RPC_URL=
-BASE_SEPOLIA_RPC_URL=
-MONAD_TESTNET_RPC_URL=
-
-# Explorer API keys for contract verification
-ARBISCAN_API_KEY=
-BASESCAN_API_KEY=
-
-# Set to "true" to enable gas reporting during tests
-REPORT_GAS=false
-```
-
-> ⚠️ Never commit your `.env` file. It is already protected by `.gitignore`.
-
-### Frontend — `frontend/.env.local`
-
-```bash
-# Get your Project ID at https://cloud.reown.com
-NEXT_PUBLIC_REOWN_PROJECT_ID=
-```
-
-> ⚠️ Never commit your `.env.local` file. It is already protected by `.gitignore`.
+### Como observador
+- Ir a **🌐 Network Map**
+- Los nodos activos aparecen en el mapa mundial en tiempo real
+- Click en un nodo para ver sus detalles
 
 ---
 
-## Available Scripts
+## Por qué Monad
 
-### Backend (`cd backend`)
+Los micropagos por segundo generan ~720 transacciones por hora por usuario activo. Con 1,000 usuarios simultáneos eso es **720,000 tx/hora**.
 
-| Command | Description |
+| Red | Viabilidad |
 |---|---|
-| `npm run compile` | Compile all Solidity contracts |
-| `npm run test` | Run all tests |
-| `npm run coverage` | Run tests with coverage report |
-| `npm run node` | Start local Hardhat node |
-| `npm run clean` | Remove build artifacts |
-| `npm run deploy:local` | Deploy to local Hardhat node |
-| `npm run deploy:arbitrum` | Deploy to Arbitrum Mainnet |
-| `npm run deploy:arbitrumSepolia` | Deploy to Arbitrum Sepolia testnet |
-| `npm run deploy:base` | Deploy to Base Mainnet |
-| `npm run deploy:baseSepolia` | Deploy to Base Sepolia testnet |
-| `npm run deploy:monadTestnet` | Deploy to Monad Testnet |
-| `npm run verify:arbitrum` | Verify contract on Arbitrum Mainnet |
-| `npm run verify:arbitrumSepolia` | Verify contract on Arbitrum Sepolia |
-| `npm run verify:base` | Verify contract on Base Mainnet |
-| `npm run verify:baseSepolia` | Verify contract on Base Sepolia |
+| Ethereum | ❌ Fees prohibitivos |
+| Polygon | ⚠️ Viable pero lenta |
+| **Monad** | ✅ 10,000 TPS · <1s finality · fees mínimos |
 
-### Frontend (`cd frontend`)
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start development server at localhost:3000 |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
+Monad es la única chain donde el modelo económico de NodeMesh funciona a escala real.
 
 ---
 
-## Deploying a Smart Contract
+## Roadmap
 
-### To a local node
-
-Open two terminals:
-
-**Terminal 1 — start the node:**
-```bash
-cd backend
-npm run node
-```
-
-**Terminal 2 — deploy:**
-```bash
-cd backend
-npm run deploy:local
-```
-
-### To a testnet or mainnet
-
-Make sure your `backend/.env` has the correct `PRIVATE_KEY` and RPC URL for your target network, then run:
-
-```bash
-npm run deploy:arbitrumSepolia
-```
-
-Replace `arbitrumSepolia` with your target network. The deploy script will automatically wait for enough confirmations before proceeding.
-
-### Automated deploy + verify in one command
-
-```bash
-npx hardhat run scripts/deploy-and-verify.ts --network arbitrumSepolia
-```
-
-This script deploys the contract, waits 30 seconds for the explorer to index it, and then verifies it automatically.
-
----
-
-## Verifying a Smart Contract
-
-Contract verification makes your source code publicly readable on block explorers (Arbiscan, Basescan, etc.).
-
-### Verify after deploy
-
-```bash
-npm run verify:arbitrumSepolia
-```
-
-You can also verify manually with a specific address:
-
-```bash
-npx hardhat verify --network arbitrumSepolia <CONTRACT_ADDRESS>
-```
-
-If your constructor takes arguments:
-
-```bash
-npx hardhat verify --network arbitrumSepolia <CONTRACT_ADDRESS> <ARG1> <ARG2>
-```
-
-> Make sure your explorer API key is set in `backend/.env` before verifying.
-
----
-
-## Running Tests
-
-```bash
-cd backend
-npm run test
-```
-
-To run a specific test file:
-
-```bash
-npx hardhat test test/Counter.test.ts
-```
-
-To run with gas reporting enabled:
-
-```bash
-REPORT_GAS=true npm run test
-```
-
-To run with coverage:
-
-```bash
-npm run coverage
-```
-
-Coverage results will appear in `backend/coverage/index.html`. Open it in a browser for a detailed line-by-line report.
-
----
-
-## Deploying the Frontend to Vercel
-
-1. Push your repository to GitHub.
-2. Go to [vercel.com](https://vercel.com) and click **Add New Project**.
-3. Import your GitHub repository.
-4. Set the **Root Directory** to `frontend`.
-5. Add your environment variable: `NEXT_PUBLIC_REOWN_PROJECT_ID`.
-6. Click **Deploy**.
-
-Vercel will automatically redeploy every time you push to your main branch.
-
----
-
-## Using This Template for a New Project
-
-1. Clone the repo and set up environment variables as described above.
-2. Replace `backend/contracts/Counter.sol` with your own contract.
-3. Update `backend/deploy/01_deploy_counter.ts` with your contract name and constructor arguments.
-4. Update `backend/test/Counter.test.ts` with tests for your contract.
-5. Compile and test: `npm run compile && npm run test`.
-6. Update `frontend/app/page.tsx` with your dApp UI.
-7. Update `frontend/config/appkit.ts` with your app name, description, and URL.
-8. Deploy your contract to the target network.
-9. Connect your frontend to the deployed contract using the generated TypeChain types from `backend/typechain-types/`.
-10. Deploy the frontend to Vercel.
-
----
-
-## Supported Networks
-
-| Network | Type | Chain ID |
+| Fase | Estado | Descripción |
 |---|---|---|
-| Hardhat (local) | Local | 31337 |
-| Localhost | Local | 31337 |
-| Arbitrum One | Mainnet | 42161 |
-| Arbitrum Sepolia | Testnet | 421614 |
-| Base | Mainnet | 8453 |
-| Base Sepolia | Testnet | 84532 |
-| Monad Testnet | Testnet | 10143 |
-
-### Adding a new network
-
-**Backend — `backend/hardhat.config.ts`:**
-
-```typescript
-newNetwork: {
-  chainId: 12345,
-  url: process.env.NEW_NETWORK_RPC_URL || "",
-  accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
-},
-```
-
-**Frontend — `frontend/config/chains.ts`:**
-
-```typescript
-export const newNetwork = {
-  id: 12345,
-  name: "New Network",
-  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.newnetwork.xyz"] } },
-  blockExplorers: { default: { name: "Explorer", url: "https://explorer.newnetwork.xyz" } },
-} as const satisfies AppKitNetwork;
-```
-
-Then add it to the `networks` array in the same file.
+| v0 · Hackathon | ✅ Completo | Contratos en testnet, demo funcional, dashboard integrado |
+| v1 · Post-hack | 🔜 Q2 2026 | Nodos reales con software ligero, cliente de escritorio, audit |
+| v2 · Producto | 🔜 Q3 2026 | App móvil, marketplace de nodos, modelo freemium |
+| v3 · Escala | 🔜 2027 | Multi-chain, exit nodes en 50+ países, DAO governance |
 
 ---
 
-## Glossary
+## Equipo
 
-**dApp** — Decentralized application. An app whose backend logic runs on a blockchain via smart contracts.
+**Richi XBT** — Computer Systems Engineer · Full-Stack Developer · Blockchain Developer
 
-**EVM** — Ethereum Virtual Machine. The runtime environment for smart contracts on Ethereum and compatible chains (Arbitrum, Base, Monad, etc.).
+- GitHub: [@usainbluntmx](https://github.com/usainbluntmx)
+- Solana Certified Developer
+- Stack: Solidity · Rust · TypeScript · Next.js · Wagmi · Anchor
 
-**Smart Contract** — A self-executing program deployed on a blockchain. Once deployed, its code cannot be changed.
+---
 
-**ABI** — Application Binary Interface. Describes the functions and events of a smart contract so frontends can interact with it.
+## Licencia
 
-**RPC URL** — Remote Procedure Call URL. The endpoint your app uses to communicate with a blockchain node.
-
-**Testnet** — A public blockchain network used for testing. Tokens have no real value. Use testnets before deploying to mainnet.
-
-**Mainnet** — The live, production blockchain where real assets are at stake.
-
-**Gas** — The fee paid to execute transactions and smart contract functions on an EVM chain.
-
-**Wallet** — Software (e.g., MetaMask) that manages your private keys and lets you sign transactions.
-
-**Private Key** — A secret cryptographic key that proves ownership of a wallet. Never share it or commit it to Git.
-
-**Contract Verification** — The process of uploading your contract source code to a block explorer so anyone can read and audit it.
-
-**TypeChain** — A tool that generates TypeScript type definitions from your compiled contracts, enabling type-safe contract interactions.
-
-**hardhat-deploy** — A Hardhat plugin that manages deterministic deployments and keeps track of deployed contract addresses across networks.
-
-**Reown AppKit** — A wallet connection library (formerly WalletConnect AppKit) that provides a customizable modal for connecting Web3 wallets.
-
-**Wagmi** — A collection of React hooks for interacting with Ethereum, built on top of Viem.
-
-**Viem** — A lightweight, type-safe TypeScript library for Ethereum interactions.
+MIT
